@@ -1,0 +1,3366 @@
+========================================
+FILE: lib\core\constants\app_constants.dart
+========================================
+// ==============================================================================
+// CORE LAYER: App Constants (Hằng số toàn cục cho ứng dụng)
+// Tương tự kiến trúc Cashew: tập trung các hằng số cấu hình, chuỗi danh mục mặc định
+// để tránh hardcode và giúp dễ dàng bảo trì hoặc mở rộng sau này.
+// ==============================================================================
+
+class AppConstants {
+  // Tên file cơ sở dữ liệu SQLite cục bộ
+  static const String databaseName = 'eduvault_db';
+
+  // Giới hạn ký tự dữ liệu (tương tự pattern Cashew: NAME_LIMIT, NOTE_LIMIT)
+  static const int titleMaxLength = 200;
+  static const int subjectMaxLength = 100;
+  static const int notesMaxLength = 2000;
+
+  // Danh mục mặc định ban đầu (Initial Categories)
+  static const String catLectureNotesId = 'cat_lecture_notes';
+  static const String catAssignmentsId = 'cat_assignments';
+  static const String catReferencesId = 'cat_references';
+  static const String catExamPrepId = 'cat_exam_prep';
+  static const String catLabReportsId = 'cat_lab_reports';
+
+  // Nhãn danh mục hiển thị
+  static const Map<String, String> defaultCategoryNames = {
+    catLectureNotesId: 'Bài giảng & Ghi chú',
+    catAssignmentsId: 'Bài tập & Tiểu luận',
+    catReferencesId: 'Tài liệu tham khảo',
+    catExamPrepId: 'Đề thi & Ôn tập',
+    catLabReportsId: 'Báo cáo thực hành',
+  };
+
+  // Màu sắc hex tương ứng từng danh mục (UI visual accent)
+  static const Map<String, String> defaultCategoryColors = {
+    catLectureNotesId: '#2563EB', // Blue
+    catAssignmentsId: '#DC2626',  // Red
+    catReferencesId: '#059669',   // Emerald
+    catExamPrepId: '#D97706',     // Amber
+    catLabReportsId: '#7C3AED',   // Purple
+  };
+
+  // Icon Material tương ứng
+  static const Map<String, String> defaultCategoryIcons = {
+    catLectureNotesId: 'menu_book',
+    catAssignmentsId: 'assignment',
+    catReferencesId: 'bookmark_border',
+    catExamPrepId: 'quiz',
+    catLabReportsId: 'science',
+  };
+}
+
+========================================
+FILE: lib\core\database\connection.dart
+========================================
+// ==============================================================================
+// CORE LAYER: Database Connection Helper
+// Mô phỏng chính xác cấu trúc LazyDatabase & NativeDatabase trong Cashew app.
+// Mở kết nối SQLite bất đồng bộ và hỗ trợ xử lý trên background isolate (createInBackground)
+// giúp tác vụ I/O nặng không làm giật lag giao diện (drop frame 60/120fps).
+// ==============================================================================
+
+import 'dart:io';
+import 'package:drift/drift.dart';
+import 'package:drift/native.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
+import '../constants/app_constants.dart';
+
+LazyDatabase openConnection({String? dbName}) {
+  return LazyDatabase(() async {
+    // Lấy thư mục lưu trữ tài liệu của ứng dụng trên thiết bị (iOS/Android/Desktop)
+    final dbFolder = await getApplicationDocumentsDirectory();
+    final file = File(p.join(dbFolder.path, '${dbName ?? AppConstants.databaseName}.sqlite'));
+
+    // Khởi tạo executor chạy trên isolate nền (Background Isolate)
+    return NativeDatabase.createInBackground(
+      file,
+      logStatements: false,
+    );
+  });
+}
+
+========================================
+FILE: lib\core\theme\app_theme.dart
+========================================
+// ==============================================================================
+// CORE LAYER: App Theme (Hệ thống Theme "Deep Tech Emerald" - LDC Edition)
+// Thiết kế theo yêu cầu nhận diện thương hiệu:
+// - Scaffold Background: Deep Slate Navy (#0F172A)
+// - Card Background: Dark Slate (#1E293B) với BorderRadius.circular(16)
+// - Primary Accent: Emerald Green (#10B981) cho FAB, Active Tabs, Icons
+// - Text Colors: Pure White (#FFFFFF) & Muted Slate (#94A3B8)
+// - Hiệu ứng Gradient: LinearGradient cho AppBar & Header Cards tạo chiều sâu công nghệ
+// ==============================================================================
+
+import 'package:flutter/material.dart';
+
+class AppTheme {
+  // Bảng màu nhận diện đặc trưng "Deep Tech Emerald"
+  static const Color primaryColor = Color(0xFF10B981); // Emerald Green #10B981
+  static const Color primaryLight = Color(0xFF34D399); // Emerald 400
+  static const Color primaryDark = Color(0xFF059669); // Emerald 600
+
+  static const Color scaffoldBackground = Color(0xFF0F172A); // Deep Slate Navy #0F172A
+  static const Color cardBackground = Color(0xFF1E293B); // Dark Slate #1E293B
+  static const Color borderSubtle = Color(0xFF334155); // Slate 700
+
+  static const Color textPrimary = Color(0xFFFFFFFF); // Pure White #FFFFFF
+  static const Color textSecondary = Color(0xFF94A3B8); // Muted Slate #94A3B8
+
+  // Các hiệu ứng Gradient tạo chiều sâu (Depth Effect)
+  static const LinearGradient headerGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [
+      Color(0xFF1E293B), // Dark Slate
+      Color(0xFF0F172A), // Deep Slate Navy
+    ],
+  );
+
+  static const LinearGradient emeraldPillGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [
+      Color(0xFF10B981), // Emerald 500
+      Color(0xFF059669), // Emerald 600
+    ],
+  );
+
+  static const LinearGradient cardGlowGradient = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [
+      Color(0xFF243248),
+      Color(0xFF1E293B),
+    ],
+  );
+
+  // Theme chính của ứng dụng (Deep Tech Emerald)
+  static ThemeData get deepTechEmeraldTheme {
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.dark,
+      colorScheme: const ColorScheme.dark(
+        surface: cardBackground,
+        primary: primaryColor,
+        secondary: primaryLight,
+        onSurface: textPrimary,
+        onPrimary: Colors.white,
+      ),
+      scaffoldBackgroundColor: scaffoldBackground,
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        centerTitle: false,
+        titleTextStyle: TextStyle(
+          color: textPrimary,
+          fontSize: 22,
+          fontWeight: FontWeight.bold,
+          letterSpacing: -0.5,
+        ),
+        iconTheme: IconThemeData(color: primaryColor),
+      ),
+      cardTheme: CardThemeData(
+        color: cardBackground,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: borderSubtle, width: 1),
+        ),
+        margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 0),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: cardBackground,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        hintStyle: const TextStyle(color: textSecondary, fontSize: 14),
+        labelStyle: const TextStyle(color: textSecondary, fontSize: 14),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: borderSubtle),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: borderSubtle),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: primaryColor, width: 1.6),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: Color(0xFFEF4444)),
+        ),
+      ),
+      chipTheme: ChipThemeData(
+        backgroundColor: cardBackground,
+        selectedColor: primaryColor.withOpacity(0.2),
+        secondarySelectedColor: primaryColor,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: const BorderSide(color: borderSubtle, width: 1),
+        ),
+        labelStyle: const TextStyle(color: textSecondary, fontSize: 13),
+        secondaryLabelStyle: const TextStyle(
+          color: primaryColor,
+          fontWeight: FontWeight.bold,
+          fontSize: 13,
+        ),
+      ),
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        backgroundColor: primaryColor,
+        foregroundColor: Colors.white,
+        elevation: 4,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: cardBackground,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: const BorderSide(color: borderSubtle),
+        ),
+        titleTextStyle: const TextStyle(
+          color: textPrimary,
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+        ),
+        contentTextStyle: const TextStyle(
+          color: textSecondary,
+          fontSize: 14,
+        ),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: primaryColor,
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        ),
+      ),
+    );
+  }
+
+  // Tương thích ngược: lightTheme và darkTheme đều sử dụng Deep Tech Emerald
+  static ThemeData get lightTheme => deepTechEmeraldTheme;
+  static ThemeData get darkTheme => deepTechEmeraldTheme;
+}
+
+========================================
+FILE: lib\data\database\converters\type_converters.dart
+========================================
+// ==============================================================================
+// DATA LAYER: TypeConverters
+// Cashew sử dụng rộng rãi TypeConverter để lưu trữ các kiểu dữ liệu phức tạp
+// (danh sách JSON, Enum tuỳ chỉnh, Map) vào các kiểu dữ liệu nguyên thủy của SQLite (TEXT).
+// ==============================================================================
+
+import 'dart:convert';
+import 'package:drift/drift.dart';
+
+/// Enum mức độ quan trọng/ưu tiên của tài liệu
+enum DocumentPriority {
+  low,
+  medium,
+  high,
+}
+
+/// Converter chuyển đổi danh sách các tag/từ khóa (List<String>) thành chuỗi JSON trong SQLite
+class StringListConverter extends TypeConverter<List<String>, String> {
+  const StringListConverter();
+
+  @override
+  List<String> fromSql(String fromDb) {
+    if (fromDb.isEmpty) return [];
+    try {
+      final decoded = jsonDecode(fromDb);
+      if (decoded is List) {
+        return decoded.map((e) => e.toString()).toList();
+      }
+      return [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  @override
+  String toSql(List<String> value) {
+    return jsonEncode(value);
+  }
+}
+
+/// Converter chuyển đổi Enum DocumentPriority thành String và ngược lại
+class DocumentPriorityConverter extends TypeConverter<DocumentPriority, String> {
+  const DocumentPriorityConverter();
+
+  @override
+  DocumentPriority fromSql(String fromDb) {
+    switch (fromDb) {
+      case 'high':
+        return DocumentPriority.high;
+      case 'medium':
+        return DocumentPriority.medium;
+      case 'low':
+      default:
+        return DocumentPriority.low;
+    }
+  }
+
+  @override
+  String toSql(DocumentPriority value) {
+    return value.name;
+  }
+}
+
+========================================
+FILE: lib\data\database\daos\category_dao.dart
+========================================
+// ==============================================================================
+// DATA LAYER: Category DAO (Data Access Object)
+// Cashew phân tách các tác vụ truy vấn SQL thô vào các DAO riêng biệt.
+// Lợi ích: Cô lập truy vấn cơ sở dữ liệu, code gọn gàng, hỗ trợ Unit Test độc lập.
+// ==============================================================================
+
+import 'package:drift/drift.dart';
+import '../drift_database.dart';
+import '../tables.dart';
+
+part 'category_dao.g.dart';
+
+@DriftAccessor(tables: [CategoriesTable])
+class CategoryDao extends DatabaseAccessor<AppDatabase> with _$CategoryDaoMixin {
+  CategoryDao(AppDatabase db) : super(db);
+
+  /// Lắng nghe Stream danh sách toàn bộ danh mục học tập (Reactive UI)
+  Stream<List<CategoriesTableData>> watchAllCategories() {
+    return (select(categoriesTable)..orderBy([(t) => OrderingTerm.asc(t.name)])).watch();
+  }
+
+  /// Lấy danh sách toàn bộ danh mục (Future)
+  Future<List<CategoriesTableData>> getAllCategories() {
+    return (select(categoriesTable)..orderBy([(t) => OrderingTerm.asc(t.name)])).get();
+  }
+
+  /// Tìm danh mục theo ID
+  Future<CategoriesTableData?> getCategoryById(String id) {
+    return (select(categoriesTable)..where((tbl) => tbl.id.equals(id))).getSingleOrNull();
+  }
+
+  /// Chèn danh mục mới hoặc thay thế nếu đã tồn tại
+  Future<int> insertCategory(CategoriesTableCompanion entry) {
+    return into(categoriesTable).insert(entry, mode: InsertMode.insertOrReplace);
+  }
+
+  /// Cập nhật thông tin danh mục
+  Future<bool> updateCategory(CategoriesTableCompanion entry) {
+    return update(categoriesTable).replace(entry);
+  }
+
+  /// Xóa danh mục theo ID
+  Future<int> deleteCategory(String id) {
+    return (delete(categoriesTable)..where((tbl) => tbl.id.equals(id))).go();
+  }
+}
+
+========================================
+FILE: lib\data\database\daos\document_dao.dart
+========================================
+// ==============================================================================
+// DATA LAYER: Document DAO (Data Access Object)
+// Đảm nhiệm toàn bộ các thao tác CRUD và Filter/Search truy vấn SQL SQLite
+// cho tài liệu học tập (DocumentsTable). 
+// Tương tự pattern Cashew: tận dụng các toán tử logic của Drift để tối ưu tốc độ truy vấn.
+// ==============================================================================
+
+import 'package:drift/drift.dart';
+import '../drift_database.dart';
+import '../tables.dart';
+
+part 'document_dao.g.dart';
+
+@DriftAccessor(tables: [DocumentsTable, CategoriesTable])
+class DocumentDao extends DatabaseAccessor<AppDatabase> with _$DocumentDaoMixin {
+  DocumentDao(AppDatabase db) : super(db);
+
+  /// Lắng nghe Stream danh sách tài liệu mới nhất
+  Stream<List<DocumentsTableData>> watchAllDocuments() {
+    return (select(documentsTable)..orderBy([(t) => OrderingTerm.desc(t.createdDate)])).watch();
+  }
+
+  /// Lấy danh sách tài liệu một lần (Future)
+  Future<List<DocumentsTableData>> getAllDocuments() {
+    return (select(documentsTable)..orderBy([(t) => OrderingTerm.desc(t.createdDate)])).get();
+  }
+
+  /// Lấy tài liệu theo ID cụ thể
+  Future<DocumentsTableData?> getDocumentById(String id) {
+    return (select(documentsTable)..where((tbl) => tbl.id.equals(id))).getSingleOrNull();
+  }
+
+  /// Lắng nghe tài liệu kết hợp bộ lọc Category và Search từ khóa (tiêu đề hoặc môn học)
+  Stream<List<DocumentsTableData>> watchFilteredDocuments({
+    String? categoryId,
+    String? searchQuery,
+  }) {
+    final query = select(documentsTable);
+
+    // Lọc theo danh mục nếu có chỉ định (khác null và khác 'all')
+    if (categoryId != null && categoryId.isNotEmpty && categoryId != 'all') {
+      query.where((tbl) => tbl.categoryId.equals(categoryId));
+    }
+
+    // Lọc theo từ khóa tìm kiếm: kiểm tra khớp Tiêu đề HOẶC Môn học
+    if (searchQuery != null && searchQuery.trim().isNotEmpty) {
+      final searchPattern = '%${searchQuery.trim()}%';
+      query.where((tbl) => tbl.title.like(searchPattern) | tbl.subject.like(searchPattern));
+    }
+
+    // Sắp xếp giảm dần theo ngày tạo (tài liệu mới nhất lên đầu)
+    query.orderBy([(t) => OrderingTerm.desc(t.createdDate)]);
+
+    return query.watch();
+  }
+
+  /// Thêm mới tài liệu vào bảng
+  Future<int> insertDocument(DocumentsTableCompanion entry) {
+    return into(documentsTable).insert(entry, mode: InsertMode.insertOrReplace);
+  }
+
+  /// Cập nhật tài liệu
+  Future<bool> updateDocument(DocumentsTableCompanion entry) {
+    return update(documentsTable).replace(entry);
+  }
+
+  /// Xóa tài liệu theo ID
+  Future<int> deleteDocument(String id) {
+    return (delete(documentsTable)..where((tbl) => tbl.id.equals(id))).go();
+  }
+}
+
+========================================
+FILE: lib\data\database\drift_database.dart
+========================================
+// ==============================================================================
+// DATA LAYER: Drift Database (Quản lý Database SQLite tập trung)
+// Theo chuẩn Cashew app: AppDatabase kế thừa từ code sinh ra (_$AppDatabase),
+// tích hợp MigrationStrategy để seed dữ liệu danh mục ban đầu,
+// kích hoạt PRAGMA foreign_keys để đảm bảo tính toàn vẹn tham chiếu dữ liệu.
+// ==============================================================================
+
+import 'package:drift/drift.dart';
+import '../../core/constants/app_constants.dart';
+import '../../core/database/connection.dart';
+import 'converters/type_converters.dart';
+import 'tables.dart';
+import 'daos/category_dao.dart';
+import 'daos/document_dao.dart';
+
+part 'drift_database.g.dart';
+
+@DriftDatabase(
+  tables: [CategoriesTable, DocumentsTable],
+  daos: [CategoryDao, DocumentDao],
+)
+class AppDatabase extends _$AppDatabase {
+  // Constructor mặc định sử dụng LazyDatabase mở file SQLite trong app storage
+  AppDatabase([QueryExecutor? e]) : super(e ?? openConnection());
+
+  // Schema version cho cơ sở dữ liệu
+  @override
+  int get schemaVersion => 1;
+
+  // Chiến lược Migration & Khởi tạo dữ liệu mẫu (Seeding)
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+        onCreate: (Migrator m) async {
+          // Tạo tất cả các bảng trong database
+          await m.createAll();
+
+          // Tự động chèn các danh mục chuẩn ban đầu (Seed initial categories)
+          await _seedDefaultCategories();
+        },
+        beforeOpen: (details) async {
+          // Bật tính năng kiểm tra khóa ngoại (Foreign Keys) trong SQLite
+          await customStatement('PRAGMA foreign_keys = ON;');
+        },
+      );
+
+  /// Khởi tạo dữ liệu danh mục mặc định ban đầu
+  Future<void> _seedDefaultCategories() async {
+    for (final entry in AppConstants.defaultCategoryNames.entries) {
+      final id = entry.key;
+      final name = entry.value;
+      final colorHex = AppConstants.defaultCategoryColors[id];
+      final icon = AppConstants.defaultCategoryIcons[id];
+
+      await into(categoriesTable).insert(
+        CategoriesTableCompanion.insert(
+          id: id,
+          name: name,
+          colorHex: Value(colorHex),
+          icon: Value(icon),
+        ),
+        mode: InsertMode.insertOrIgnore,
+      );
+    }
+  }
+}
+
+========================================
+FILE: lib\data\database\tables.dart
+========================================
+// ==============================================================================
+// DATA LAYER: Drift Database Tables (Bảng SQLite Schema)
+// Phản chiếu trực tiếp mô hình Table definition của Drift theo chuẩn Cashew:
+// Định nghĩa schema tường minh, rằng buộc khóa ngoại (foreign key reference),
+// giá trị mặc định, kiểm tra độ dài và tích hợp TypeConverter.
+// ==============================================================================
+
+import 'package:drift/drift.dart';
+import '../../core/constants/app_constants.dart';
+import 'converters/type_converters.dart';
+
+/// Bảng CategoriesTable: Quản lý danh mục tài liệu (Bài giảng, Bài tập, Tài liệu tham khảo,...)
+class CategoriesTable extends Table {
+  // Khóa chính: Chuỗi ID dạng UUID hoặc mã định danh duy nhất
+  TextColumn get id => text()();
+
+  // Tên hiển thị của danh mục (tối đa 100 ký tự)
+  TextColumn get name => text().withLength(min: 1, max: AppConstants.subjectMaxLength)();
+
+  // Tên biểu tượng (Material Icon name)
+  TextColumn get icon => text().nullable()();
+
+  // Mã màu hiển thị định dạng Hex (ví dụ: #2563EB)
+  TextColumn get colorHex => text().nullable()();
+
+  // Thời gian tạo danh mục
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Bảng DocumentsTable: Quản lý tài liệu học tập
+class DocumentsTable extends Table {
+  // Khóa chính tài liệu
+  TextColumn get id => text()();
+
+  // Tiêu đề tài liệu (Title)
+  TextColumn get title => text().withLength(min: 1, max: AppConstants.titleMaxLength)();
+
+  // Môn học liên quan (Subject: ví dụ "Toán rời rạc", "Lập trình di động")
+  TextColumn get subject => text().withLength(min: 1, max: AppConstants.subjectMaxLength)();
+
+  // Khóa ngoại liên kết tới CategoriesTable
+  TextColumn get categoryId => text().references(
+        CategoriesTable,
+        #id,
+        onDelete: KeyAction.cascade,
+        onUpdate: KeyAction.cascade,
+      )();
+
+  // Đường dẫn tệp nội bộ hoặc liên kết tài liệu trực tuyến (URL / File path)
+  TextColumn get filePathOrUrl => text().nullable()();
+
+  // Ghi chú bổ sung (Notes)
+  TextColumn get notes => text().nullable().withLength(max: AppConstants.notesMaxLength)();
+
+  // Danh sách thẻ phân loại, chuyển đổi sang JSON qua StringListConverter
+  TextColumn get tags => text().map(const StringListConverter()).withDefault(const Constant('[]'))();
+
+  // Mức độ ưu tiên/quan trọng, chuyển đổi qua DocumentPriorityConverter
+  TextColumn get priority => text().map(const DocumentPriorityConverter()).withDefault(const Constant('low'))();
+
+  // Ngày tạo tài liệu
+  DateTimeColumn get createdDate => dateTime().withDefault(currentDateAndTime)();
+
+  // Ngày cập nhật tài liệu gần nhất
+  DateTimeColumn get updatedDate => dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+========================================
+FILE: lib\data\repositories\document_repository_impl.dart
+========================================
+// ==============================================================================
+// DATA LAYER: Document Repository Implementation
+// Hiện thực hóa interface DocumentRepository của tầng Domain theo chuẩn Cashew:
+// - Tách biệt hoàn toàn tầng dữ liệu (Drift SQLite) khỏi tầng giao diện
+// - Thực hiện ánh xạ (Mapping) hai chiều giữa Drift TableData và Domain Models
+// - Tận dụng SQL JOIN giữa DocumentsTable và CategoriesTable để lấy kèm metadata danh mục
+// - Phục vụ luồng dữ liệu phản ứng Reactive Streams (watch) và tác vụ đơn nhất (Future)
+// ==============================================================================
+
+import 'package:drift/drift.dart';
+import '../../domain/models/category_model.dart';
+import '../../domain/models/document_model.dart';
+import '../../domain/repositories/document_repository.dart';
+import '../database/drift_database.dart';
+
+class DocumentRepositoryImpl implements DocumentRepository {
+  final AppDatabase _db;
+
+  DocumentRepositoryImpl(this._db);
+
+  @override
+  Stream<List<DocumentModel>> watchAllDocuments() {
+    // Thực hiện truy vấn JOIN giữa DocumentsTable và CategoriesTable
+    final query = _db.select(_db.documentsTable).join([
+      leftOuterJoin(
+        _db.categoriesTable,
+        _db.categoriesTable.id.equalsExp(_db.documentsTable.categoryId),
+      ),
+    ])..orderBy([OrderingTerm.desc(_db.documentsTable.createdDate)]);
+
+    return query.watch().map((rows) {
+      return rows.map((row) {
+        final doc = row.readTable(_db.documentsTable);
+        final cat = row.readTableOrNull(_db.categoriesTable);
+        return _mapToDomain(doc, cat);
+      }).toList();
+    });
+  }
+
+  @override
+  Future<List<DocumentModel>> getAllDocuments() async {
+    final query = _db.select(_db.documentsTable).join([
+      leftOuterJoin(
+        _db.categoriesTable,
+        _db.categoriesTable.id.equalsExp(_db.documentsTable.categoryId),
+      ),
+    ])..orderBy([OrderingTerm.desc(_db.documentsTable.createdDate)]);
+
+    final rows = await query.get();
+    return rows.map((row) {
+      final doc = row.readTable(_db.documentsTable);
+      final cat = row.readTableOrNull(_db.categoriesTable);
+      return _mapToDomain(doc, cat);
+    }).toList();
+  }
+
+  @override
+  Stream<List<DocumentModel>> watchFilteredDocuments({
+    String? categoryId,
+    String? searchQuery,
+  }) {
+    final query = _db.select(_db.documentsTable).join([
+      leftOuterJoin(
+        _db.categoriesTable,
+        _db.categoriesTable.id.equalsExp(_db.documentsTable.categoryId),
+      ),
+    ]);
+
+    // Lọc theo Category nếu khác 'all'
+    if (categoryId != null && categoryId.isNotEmpty && categoryId != 'all') {
+      query.where(_db.documentsTable.categoryId.equals(categoryId));
+    }
+
+    // Lọc theo tiêu đề hoặc môn học bằng toán tử LIKE trong SQLite
+    if (searchQuery != null && searchQuery.trim().isNotEmpty) {
+      final pattern = '%${searchQuery.trim()}%';
+      query.where(
+        _db.documentsTable.title.like(pattern) |
+            _db.documentsTable.subject.like(pattern),
+      );
+    }
+
+    query.orderBy([OrderingTerm.desc(_db.documentsTable.createdDate)]);
+
+    return query.watch().map((rows) {
+      return rows.map((row) {
+        final doc = row.readTable(_db.documentsTable);
+        final cat = row.readTableOrNull(_db.categoriesTable);
+        return _mapToDomain(doc, cat);
+      }).toList();
+    });
+  }
+
+  @override
+  Future<DocumentModel?> getDocumentById(String id) async {
+    final query = _db.select(_db.documentsTable).join([
+      leftOuterJoin(
+        _db.categoriesTable,
+        _db.categoriesTable.id.equalsExp(_db.documentsTable.categoryId),
+      ),
+    ])..where(_db.documentsTable.id.equals(id));
+
+    final row = await query.getSingleOrNull();
+    if (row == null) return null;
+
+    final doc = row.readTable(_db.documentsTable);
+    final cat = row.readTableOrNull(_db.categoriesTable);
+    return _mapToDomain(doc, cat);
+  }
+
+  @override
+  Future<void> insertDocument(DocumentModel document) async {
+    await _db.documentDao.insertDocument(
+      DocumentsTableCompanion(
+        id: Value(document.id),
+        title: Value(document.title),
+        subject: Value(document.subject),
+        categoryId: Value(document.categoryId),
+        filePathOrUrl: Value(document.filePathOrUrl),
+        notes: Value(document.notes),
+        tags: Value(document.tags),
+        priority: Value(document.priority),
+        createdDate: Value(document.createdDate),
+        updatedDate: Value(document.updatedDate),
+      ),
+    );
+  }
+
+  @override
+  Future<void> updateDocument(DocumentModel document) async {
+    await _db.documentDao.updateDocument(
+      DocumentsTableCompanion(
+        id: Value(document.id),
+        title: Value(document.title),
+        subject: Value(document.subject),
+        categoryId: Value(document.categoryId),
+        filePathOrUrl: Value(document.filePathOrUrl),
+        notes: Value(document.notes),
+        tags: Value(document.tags),
+        priority: Value(document.priority),
+        createdDate: Value(document.createdDate),
+        updatedDate: Value(document.updatedDate),
+      ),
+    );
+  }
+
+  @override
+  Future<void> deleteDocument(String id) async {
+    await _db.documentDao.deleteDocument(id);
+  }
+
+  @override
+  Stream<List<CategoryModel>> watchAllCategories() {
+    return _db.categoryDao.watchAllCategories().map(
+          (list) => list.map(_mapCategoryToDomain).toList(),
+        );
+  }
+
+  @override
+  Future<List<CategoryModel>> getAllCategories() async {
+    final list = await _db.categoryDao.getAllCategories();
+    return list.map(_mapCategoryToDomain).toList();
+  }
+
+  @override
+  Future<void> insertCategory(CategoryModel category) async {
+    await _db.categoryDao.insertCategory(
+      CategoriesTableCompanion(
+        id: Value(category.id),
+        name: Value(category.name),
+        icon: Value(category.icon),
+        colorHex: Value(category.colorHex),
+        createdAt: Value(category.createdAt),
+      ),
+    );
+  }
+
+  @override
+  Future<void> deleteCategory(String id) async {
+    await _db.categoryDao.deleteCategory(id);
+  }
+
+  // --- Các hàm chuyển đổi Mapper nội bộ (Data Transfer Object -> Domain Model) ---
+
+  DocumentModel _mapToDomain(DocumentsTableData doc, CategoriesTableData? cat) {
+    return DocumentModel(
+      id: doc.id,
+      title: doc.title,
+      subject: doc.subject,
+      categoryId: doc.categoryId,
+      categoryName: cat?.name,
+      categoryColorHex: cat?.colorHex,
+      filePathOrUrl: doc.filePathOrUrl,
+      notes: doc.notes,
+      tags: doc.tags,
+      priority: doc.priority,
+      createdDate: doc.createdDate,
+      updatedDate: doc.updatedDate,
+    );
+  }
+
+  CategoryModel _mapCategoryToDomain(CategoriesTableData cat) {
+    return CategoryModel(
+      id: cat.id,
+      name: cat.name,
+      icon: cat.icon,
+      colorHex: cat.colorHex,
+      createdAt: cat.createdAt,
+    );
+  }
+}
+
+========================================
+FILE: lib\domain\models\category_model.dart
+========================================
+// ==============================================================================
+// DOMAIN LAYER: Category Model (Thực thể miền Danh mục)
+// Pure Dart Object không phụ thuộc vào bất kỳ framework hoặc cơ sở dữ liệu nào.
+// Tuân thủ nguyên lý Dependency Inversion Principle và Cashew Clean Architecture.
+// ==============================================================================
+
+class CategoryModel {
+  final String id;
+  final String name;
+  final String? icon;
+  final String? colorHex;
+  final DateTime createdAt;
+
+  const CategoryModel({
+    required this.id,
+    required this.name,
+    this.icon,
+    this.colorHex,
+    required this.createdAt,
+  });
+
+  /// Tạo bản sao có cập nhật các trường nhất định
+  CategoryModel copyWith({
+    String? id,
+    String? name,
+    String? icon,
+    String? colorHex,
+    DateTime? createdAt,
+  }) {
+    return CategoryModel(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      icon: icon ?? this.icon,
+      colorHex: colorHex ?? this.colorHex,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is CategoryModel && other.id == id;
+  }
+
+  @override
+  int get hashCode => id.hashCode;
+
+  @override
+  String toString() => 'CategoryModel(id: $id, name: $name)';
+}
+
+========================================
+FILE: lib\domain\models\document_model.dart
+========================================
+// ==============================================================================
+// DOMAIN LAYER: Document Model (Thực thể miền Tài liệu học tập)
+// Đại diện cho lõi nghiệp vụ của ứng dụng: độc lập với Drift SQLite, 
+// đóng gói đầy đủ các thuộc tính và hành vi nghiệp vụ của một tài liệu học tập.
+// ==============================================================================
+
+import '../../data/database/converters/type_converters.dart';
+
+class DocumentModel {
+  final String id;
+  final String title;
+  final String subject;
+  final String categoryId;
+  final String? categoryName; // Tên danh mục dùng để hiển thị trực tiếp trên UI
+  final String? categoryColorHex; // Màu đại diện danh mục
+  final String? filePathOrUrl;
+  final String? notes;
+  final List<String> tags;
+  final DocumentPriority priority;
+  final DateTime createdDate;
+  final DateTime updatedDate;
+
+  const DocumentModel({
+    required this.id,
+    required this.title,
+    required this.subject,
+    required this.categoryId,
+    this.categoryName,
+    this.categoryColorHex,
+    this.filePathOrUrl,
+    this.notes,
+    this.tags = const [],
+    this.priority = DocumentPriority.low,
+    required this.createdDate,
+    required this.updatedDate,
+  });
+
+  /// Kiểm tra tài liệu có đính kèm file hoặc đường dẫn liên kết hay không
+  bool get hasAttachment => filePathOrUrl != null && filePathOrUrl!.trim().isNotEmpty;
+
+  /// Kiểm tra đường dẫn có phải liên kết web (http/https) hay file cục bộ
+  bool get isWebLink =>
+      hasAttachment &&
+      (filePathOrUrl!.toLowerCase().startsWith('http://') ||
+          filePathOrUrl!.toLowerCase().startsWith('https://'));
+
+  /// Tạo bản sao có cập nhật các trường nhất định (Immutable Data Pattern)
+  DocumentModel copyWith({
+    String? id,
+    String? title,
+    String? subject,
+    String? categoryId,
+    String? categoryName,
+    String? categoryColorHex,
+    String? filePathOrUrl,
+    String? notes,
+    List<String>? tags,
+    DocumentPriority? priority,
+    DateTime? createdDate,
+    DateTime? updatedDate,
+  }) {
+    return DocumentModel(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      subject: subject ?? this.subject,
+      categoryId: categoryId ?? this.categoryId,
+      categoryName: categoryName ?? this.categoryName,
+      categoryColorHex: categoryColorHex ?? this.categoryColorHex,
+      filePathOrUrl: filePathOrUrl ?? this.filePathOrUrl,
+      notes: notes ?? this.notes,
+      tags: tags ?? this.tags,
+      priority: priority ?? this.priority,
+      createdDate: createdDate ?? this.createdDate,
+      updatedDate: updatedDate ?? this.updatedDate,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is DocumentModel && other.id == id;
+  }
+
+  @override
+  int get hashCode => id.hashCode;
+
+  @override
+  String toString() {
+    return 'DocumentModel(id: $id, title: $title, subject: $subject, categoryId: $categoryId)';
+  }
+}
+
+========================================
+FILE: lib\domain\repositories\document_repository.dart
+========================================
+// ==============================================================================
+// DOMAIN LAYER: Document Repository Interface (Giao diện trừu tượng Repository)
+// Định nghĩa hợp đồng (contract) thao tác dữ liệu độc lập với công nghệ lưu trữ.
+// Giúp tầng Presentation không phụ thuộc trực tiếp vào Drift hay SQLite, 
+// dễ dàng thay thế sang Firebase/REST API hoặc viết Unit Test Mocking theo chuẩn Cashew.
+// ==============================================================================
+
+import '../models/category_model.dart';
+import '../models/document_model.dart';
+
+abstract class DocumentRepository {
+  /// Lắng nghe Stream danh sách toàn bộ tài liệu (tự động cập nhật khi DB thay đổi)
+  Stream<List<DocumentModel>> watchAllDocuments();
+
+  /// Lấy danh sách tài liệu một lần (Future)
+  Future<List<DocumentModel>> getAllDocuments();
+
+  /// Lắng nghe Stream tài liệu được lọc theo danh mục và từ khóa tìm kiếm
+  Stream<List<DocumentModel>> watchFilteredDocuments({
+    String? categoryId,
+    String? searchQuery,
+  });
+
+  /// Lấy chi tiết tài liệu theo ID
+  Future<DocumentModel?> getDocumentById(String id);
+
+  /// Thêm mới tài liệu vào kho dữ liệu
+  Future<void> insertDocument(DocumentModel document);
+
+  /// Cập nhật thông tin tài liệu hiện có
+  Future<void> updateDocument(DocumentModel document);
+
+  /// Xóa tài liệu theo ID
+  Future<void> deleteDocument(String id);
+
+  /// Lắng nghe Stream danh sách toàn bộ danh mục học tập
+  Stream<List<CategoryModel>> watchAllCategories();
+
+  /// Lấy danh sách toàn bộ danh mục (Future)
+  Future<List<CategoryModel>> getAllCategories();
+
+  /// Thêm danh mục mới
+  Future<void> insertCategory(CategoryModel category);
+
+  /// Xóa danh mục
+  Future<void> deleteCategory(String id);
+}
+
+========================================
+FILE: lib\main.dart
+========================================
+// ==============================================================================
+// APPLICATION ENTRY POINT: main.dart
+// Cấu hình khởi tạo toàn cục theo chuẩn Cashew Architecture:
+// - Đảm bảo WidgetsFlutterBinding được khởi chạy
+// - Thiết lập Dependency Injection (DI) bằng MultiProvider phân tầng:
+//   * Drift SQLite Database (Singleton)
+//   * Domain Repository Implementation
+//   * Presentation State Notifiers (DocumentProvider)
+// - Cấu hình hệ thống Material 3 AppTheme với chế độ sáng/tối tự động
+// ==============================================================================
+
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'core/theme/app_theme.dart';
+import 'data/database/drift_database.dart';
+import 'data/repositories/document_repository_impl.dart';
+import 'domain/repositories/document_repository.dart';
+import 'presentation/providers/document_provider.dart';
+import 'presentation/screens/home_screen.dart';
+
+void main() async {
+  // 1. Đảm bảo Engine Flutter được liên kết trước khi thực hiện thao tác I/O
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // 2. Khởi tạo Cơ sở dữ liệu SQLite cục bộ (Drift ORM)
+  final database = AppDatabase();
+
+  // 3. Khởi tạo Repository hiện thực (Data Layer)
+  final DocumentRepository documentRepository = DocumentRepositoryImpl(database);
+
+  runApp(
+    MultiProvider(
+      providers: [
+        // Cung cấp Database Instance trong toàn cây Widget
+        Provider<AppDatabase>.value(value: database),
+
+        // Cung cấp Repository Interface cho phép dễ dàng Mocking khi kiểm thử
+        Provider<DocumentRepository>.value(value: documentRepository),
+
+        // Cung cấp Business State Notifier cho Tầng Giao diện UI
+        ChangeNotifierProvider<DocumentProvider>(
+          create: (_) => DocumentProvider(repository: documentRepository),
+        ),
+      ],
+      child: const EduVaultApp(),
+    ),
+  );
+}
+
+class EduVaultApp extends StatelessWidget {
+  const EduVaultApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'EduVault - LDC Edition',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.deepTechEmeraldTheme,
+      darkTheme: AppTheme.deepTechEmeraldTheme,
+      themeMode: ThemeMode.dark,
+      home: const HomeScreen(),
+    );
+  }
+}
+
+========================================
+FILE: lib\presentation\providers\document_provider.dart
+========================================
+// ==============================================================================
+// PRESENTATION / STATE LAYER: Document Provider
+// Quản lý trạng thái ứng dụng theo kiến trúc Provider & ChangeNotifier của Cashew:
+// - Lắng nghe luồng dữ liệu thời gian thực (Reactive Streams) từ Repository
+// - Quản lý trạng thái tìm kiếm (Search Query) và bộ lọc danh mục (Category Filter)
+// - Thực hiện các thao tác CRUD bất đồng bộ với cơ chế xử lý lỗi chặt chẽ
+// - Thông báo cập nhật giao diện tự động (notifyListeners) khi dữ liệu thay đổi
+// ==============================================================================
+
+import 'dart:async';
+import 'package:flutter/foundation.dart';
+import '../../domain/models/category_model.dart';
+import '../../domain/models/document_model.dart';
+import '../../domain/repositories/document_repository.dart';
+
+class DocumentProvider extends ChangeNotifier {
+  final DocumentRepository _repository;
+
+  // Trạng thái nội bộ
+  List<DocumentModel> _documents = [];
+  List<CategoryModel> _categories = [];
+  String _searchQuery = '';
+  String? _selectedCategoryId = 'all';
+  bool _isLoading = false;
+  String? _errorMessage;
+
+  // Stream Subscriptions quản lý giải phóng tài nguyên
+  StreamSubscription<List<DocumentModel>>? _documentSubscription;
+  StreamSubscription<List<CategoryModel>>? _categorySubscription;
+
+  DocumentProvider({required DocumentRepository repository})
+      : _repository = repository {
+    _initStreams();
+  }
+
+  // --- Getters công khai cho giao diện ---
+
+  List<DocumentModel> get documents => _documents;
+  List<CategoryModel> get categories => _categories;
+  String get searchQuery => _searchQuery;
+  String? get selectedCategoryId => _selectedCategoryId;
+  bool get isLoading => _isLoading;
+  String? get errorMessage => _errorMessage;
+
+  /// Danh sách tài liệu được lọc theo thời gian thực (Title/Subject & Category)
+  List<DocumentModel> get filteredDocuments {
+    return _documents.where((doc) {
+      // 1. Lọc theo danh mục
+      final matchesCategory = _selectedCategoryId == null ||
+          _selectedCategoryId == 'all' ||
+          doc.categoryId == _selectedCategoryId;
+
+      if (!matchesCategory) return false;
+
+      // 2. Lọc theo từ khóa tìm kiếm (khớp Tiêu đề hoặc Môn học)
+      if (_searchQuery.trim().isEmpty) return true;
+      final queryLower = _searchQuery.trim().toLowerCase();
+      final titleMatch = doc.title.toLowerCase().contains(queryLower);
+      final subjectMatch = doc.subject.toLowerCase().contains(queryLower);
+
+      return titleMatch || subjectMatch;
+    }).toList();
+  }
+
+  // --- Khởi tạo và Lắng nghe Reactive Streams ---
+
+  void _initStreams() {
+    _isLoading = true;
+    notifyListeners();
+
+    // Lắng nghe luồng danh mục
+    _categorySubscription = _repository.watchAllCategories().listen(
+      (cats) {
+        _categories = cats;
+        _isLoading = false;
+        _errorMessage = null;
+        notifyListeners();
+      },
+      onError: (err) {
+        _errorMessage = 'Lỗi nạp danh mục: $err';
+        _isLoading = false;
+        notifyListeners();
+      },
+    );
+
+    // Lắng nghe luồng tài liệu
+    _documentSubscription = _repository.watchAllDocuments().listen(
+      (docs) {
+        _documents = docs;
+        _isLoading = false;
+        _errorMessage = null;
+        notifyListeners();
+      },
+      onError: (err) {
+        _errorMessage = 'Lỗi nạp tài liệu: $err';
+        _isLoading = false;
+        notifyListeners();
+      },
+    );
+  }
+
+  // --- Thao tác cập nhật bộ lọc và tìm kiếm (Filters & Search) ---
+
+  /// Cập nhật từ khóa tìm kiếm thời gian thực
+  void setSearchQuery(String query) {
+    if (_searchQuery != query) {
+      _searchQuery = query;
+      notifyListeners();
+    }
+  }
+
+  /// Cập nhật bộ lọc danh mục đã chọn
+  void setCategoryFilter(String? categoryId) {
+    if (_selectedCategoryId != categoryId) {
+      _selectedCategoryId = categoryId;
+      notifyListeners();
+    }
+  }
+
+  /// Đặt lại toàn bộ bộ lọc về trạng thái ban đầu
+  void resetFilters() {
+    _searchQuery = '';
+    _selectedCategoryId = 'all';
+    notifyListeners();
+  }
+
+  // --- Thao tác CRUD (Create - Read - Update - Delete) ---
+
+  /// Thêm mới một tài liệu học tập
+  Future<void> addDocument(DocumentModel document) async {
+    try {
+      await _repository.insertDocument(document);
+    } catch (e) {
+      _errorMessage = 'Lỗi khi thêm tài liệu: $e';
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  /// Cập nhật thông tin tài liệu hiện có
+  Future<void> updateDocument(DocumentModel document) async {
+    try {
+      await _repository.updateDocument(document);
+    } catch (e) {
+      _errorMessage = 'Lỗi khi cập nhật tài liệu: $e';
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  /// Xóa tài liệu theo ID
+  Future<void> deleteDocument(String id) async {
+    try {
+      await _repository.deleteDocument(id);
+    } catch (e) {
+      _errorMessage = 'Lỗi khi xóa tài liệu: $e';
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  /// Làm mới thủ công toàn bộ dữ liệu
+  Future<void> refresh() async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      _documents = await _repository.getAllDocuments();
+      _categories = await _repository.getAllCategories();
+      _errorMessage = null;
+    } catch (e) {
+      _errorMessage = 'Lỗi làm mới dữ liệu: $e';
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  @override
+  void dispose() {
+    _documentSubscription?.cancel();
+    _categorySubscription?.cancel();
+    super.dispose();
+  }
+}
+
+========================================
+FILE: lib\presentation\screens\add_edit_document_screen.dart
+========================================
+// ==============================================================================
+// PRESENTATION LAYER: Add / Edit Document Screen (Deep Tech Emerald)
+// Màn hình biểu mẫu thêm mới hoặc chỉnh sửa thông tin tài liệu học tập.
+// Tuân thủ Flutter Box Model: SafeArea, SingleChildScrollView, Padding, Column.
+// Đồng bộ phong cách nhận diện Deep Tech Emerald:
+// - Scaffold: Deep Slate Navy (#0F172A)
+// - Container/Inputs: Dark Slate (#1E293B)
+// - Primary Accent: Emerald Green (#10B981)
+// ==============================================================================
+
+import 'dart:io';
+import 'dart:math' as math;
+
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/material.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
+import 'package:provider/provider.dart';
+import 'package:uuid/uuid.dart';
+
+import '../../core/constants/app_constants.dart';
+import '../../core/theme/app_theme.dart';
+import '../../data/database/converters/type_converters.dart';
+import '../../domain/models/category_model.dart';
+import '../../domain/models/document_model.dart';
+import '../providers/document_provider.dart';
+
+/// Sao chép tệp được chọn vào vùng lưu trữ riêng của ứng dụng.
+///
+/// Tệp trong thư mục tải xuống hoặc ứng dụng khác có thể bị di chuyển/xóa.
+/// Lưu một bản sao trong ApplicationDocumentsDirectory giúp đường dẫn đã lưu
+/// trong Drift luôn trỏ tới tệp do EduVault quản lý.
+Future<String> copyFileToApplicationDocumentsDirectory(
+  String sourcePath,
+) async {
+  final appDirectory = await getApplicationDocumentsDirectory();
+  final documentsDirectory = Directory(
+    p.join(appDirectory.path, 'EduVault', 'Documents'),
+  );
+  await documentsDirectory.create(recursive: true);
+
+  final fileName = p.basename(sourcePath);
+  final targetPath = p.join(documentsDirectory.path, fileName);
+
+  // Nếu tệp đã nằm trong thư mục riêng thì không tự sao chép đè lên chính nó.
+  if (p.normalize(sourcePath) == p.normalize(targetPath)) {
+    return targetPath;
+  }
+
+  var uniqueTargetPath = targetPath;
+  if (await File(uniqueTargetPath).exists()) {
+    final extension = p.extension(fileName);
+    final baseName = p.basenameWithoutExtension(fileName);
+    uniqueTargetPath = p.join(
+      documentsDirectory.path,
+      '${baseName}_${DateTime.now().millisecondsSinceEpoch}$extension',
+    );
+  }
+
+  await File(sourcePath).copy(uniqueTargetPath);
+  return uniqueTargetPath;
+}
+
+class AddEditDocumentScreen extends StatefulWidget {
+  final DocumentModel? document;
+
+  const AddEditDocumentScreen({super.key, this.document});
+
+  @override
+  State<AddEditDocumentScreen> createState() => _AddEditDocumentScreenState();
+}
+
+class _AddEditDocumentScreenState extends State<AddEditDocumentScreen> {
+  final _formKey = GlobalKey<FormState>();
+
+  late final TextEditingController _titleController;
+  late final TextEditingController _subjectController;
+  late final TextEditingController _filePathOrUrlController;
+  late final TextEditingController _notesController;
+
+  String? _selectedCategoryId;
+  DocumentPriority _selectedPriority = DocumentPriority.low;
+  bool _isSaving = false;
+  bool _isPickingFile = false;
+  String? _selectedFileName;
+  String? _selectedFileExtension;
+  int? _selectedFileSize;
+
+  bool get _isEditMode => widget.document != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final doc = widget.document;
+    _titleController = TextEditingController(text: doc?.title ?? '');
+    _subjectController = TextEditingController(text: doc?.subject ?? '');
+    _filePathOrUrlController = TextEditingController(
+      text: doc?.filePathOrUrl ?? '',
+    );
+    _notesController = TextEditingController(text: doc?.notes ?? '');
+    _selectedCategoryId = doc?.categoryId;
+    _selectedPriority = doc?.priority ?? DocumentPriority.low;
+    _loadExistingFileMetadata();
+  }
+
+  /// Đọc lại metadata của tệp nội bộ khi mở màn hình chỉnh sửa.
+  Future<void> _loadExistingFileMetadata() async {
+    final savedPath = _filePathOrUrlController.text.trim();
+    if (savedPath.isEmpty ||
+        savedPath.startsWith('http://') ||
+        savedPath.startsWith('https://')) {
+      return;
+    }
+
+    final file = File(savedPath);
+    if (!await file.exists()) return;
+
+    final fileName = p.basename(savedPath);
+    final stat = await file.stat();
+    if (!mounted) return;
+
+    setState(() {
+      _selectedFileName = fileName;
+      _selectedFileExtension = _extensionOf(fileName);
+      _selectedFileSize = stat.size;
+    });
+  }
+
+  String _extensionOf(String fileName) {
+    final extension = p.extension(fileName).replaceFirst('.', '').trim();
+    return extension.isEmpty ? 'FILE' : extension.toUpperCase();
+  }
+
+  String _formatFileSize(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(2)} MB';
+  }
+
+  String _documentTypeLabel(String extension) {
+    switch (extension.toLowerCase()) {
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+      case 'gif':
+      case 'webp':
+        return 'Hình ảnh';
+      case 'pdf':
+        return 'PDF';
+      case 'doc':
+      case 'docx':
+        return 'Word';
+      case 'ppt':
+      case 'pptx':
+        return 'PowerPoint';
+      case 'xls':
+      case 'xlsx':
+        return 'Excel';
+      case 'txt':
+        return 'Văn bản';
+      default:
+        return extension.toUpperCase();
+    }
+  }
+
+  /// Chọn tệp từ bộ nhớ thiết bị, sau đó lưu bản sao vào vùng dữ liệu riêng.
+  Future<void> _pickDocumentFile() async {
+    if (_isPickingFile) return;
+
+    setState(() => _isPickingFile = true);
+    try {
+      final pickedFiles = await FilePicker.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: [
+          'pdf',
+          'doc',
+          'docx',
+          'ppt',
+          'pptx',
+          'xls',
+          'xlsx',
+          'txt',
+          'jpg',
+          'jpeg',
+          'png',
+          'gif',
+          'webp',
+        ],
+      );
+
+      if (pickedFiles.isEmpty) return;
+
+      final pickedFile = pickedFiles.single;
+      final sourcePath = pickedFile.path;
+      if (sourcePath == null || sourcePath.trim().isEmpty) {
+        throw StateError('Không lấy được đường dẫn của tệp đã chọn.');
+      }
+
+      final copiedPath = await copyFileToApplicationDocumentsDirectory(
+        sourcePath,
+      );
+      final fileName = p.basename(sourcePath);
+      final fileSize = pickedFile.lengthSync() ?? await pickedFile.length();
+
+      if (!mounted) return;
+      setState(() {
+        _filePathOrUrlController.text = copiedPath;
+        _selectedFileName = fileName;
+        _selectedFileExtension = _extensionOf(fileName);
+        _selectedFileSize = fileSize;
+      });
+
+      // Chỉ tự điền khi người dùng chưa nhập tiêu đề để không ghi đè dữ liệu.
+      if (_titleController.text.trim().isEmpty) {
+        _titleController.text = p
+            .basenameWithoutExtension(fileName)
+            .replaceAll(RegExp(r'[_-]+'), ' ')
+            .trim();
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Không thể chọn tệp: $error'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isPickingFile = false);
+    }
+  }
+
+  void _clearSelectedFile() {
+    setState(() {
+      _filePathOrUrlController.clear();
+      _selectedFileName = null;
+      _selectedFileExtension = null;
+      _selectedFileSize = null;
+    });
+  }
+
+  Widget _buildFilePickerCard() {
+    final hasSelectedFile = _selectedFileName != null;
+
+    return CustomPaint(
+      painter: _DashedBorderPainter(
+        color: AppTheme.primaryColor.withOpacity(0.8),
+      ),
+      child: Material(
+        color: AppTheme.primaryColor.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(14),
+        child: InkWell(
+          onTap: _isPickingFile ? null : _pickDocumentFile,
+          borderRadius: BorderRadius.circular(14),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryColor.withOpacity(0.14),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: _isPickingFile
+                      ? const Padding(
+                          padding: EdgeInsets.all(14),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: AppTheme.primaryColor,
+                          ),
+                        )
+                      : const Icon(
+                          Icons.upload_file_rounded,
+                          color: AppTheme.primaryColor,
+                          size: 26,
+                        ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: hasSelectedFile
+                      ? Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _selectedFileName!,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: AppTheme.textPrimary,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Wrap(
+                              spacing: 6,
+                              runSpacing: 6,
+                              children: [
+                                _buildFileInfoChip(
+                                  _selectedFileExtension ?? 'FILE',
+                                  Icons.description_outlined,
+                                ),
+                                if (_selectedFileSize != null)
+                                  _buildFileInfoChip(
+                                    _formatFileSize(_selectedFileSize!),
+                                    Icons.data_usage_rounded,
+                                  ),
+                                _buildFileInfoChip(
+                                  _documentTypeLabel(
+                                    _selectedFileExtension ?? 'FILE',
+                                  ),
+                                  Icons.category_outlined,
+                                ),
+                              ],
+                            ),
+                          ],
+                        )
+                      : const Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Chọn tệp từ máy',
+                              style: TextStyle(
+                                color: AppTheme.textPrimary,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            SizedBox(height: 4),
+                            Text(
+                              'PDF, Word, PowerPoint, hình ảnh...',
+                              style: TextStyle(
+                                color: AppTheme.textSecondary,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                ),
+                if (hasSelectedFile)
+                  IconButton(
+                    tooltip: 'Bỏ tệp đã chọn',
+                    onPressed: _clearSelectedFile,
+                    icon: const Icon(
+                      Icons.close_rounded,
+                      color: AppTheme.textSecondary,
+                    ),
+                  )
+                else
+                  const Icon(
+                    Icons.chevron_right_rounded,
+                    color: AppTheme.primaryColor,
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFileInfoChip(String label, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppTheme.cardBackground,
+        borderRadius: BorderRadius.circular(7),
+        border: Border.all(color: AppTheme.borderSubtle),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: AppTheme.primaryColor),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: const TextStyle(
+              color: AppTheme.textSecondary,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _subjectController.dispose();
+    _filePathOrUrlController.dispose();
+    _notesController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleSave() async {
+    if (!_formKey.currentState!.validate()) return;
+    if (_selectedCategoryId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Vui lòng chọn danh mục cho tài liệu'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isSaving = true);
+    final provider = context.read<DocumentProvider>();
+
+    try {
+      final now = DateTime.now();
+      if (_isEditMode) {
+        // Cập nhật tài liệu hiện tại
+        final updatedDoc = widget.document!.copyWith(
+          title: _titleController.text.trim(),
+          subject: _subjectController.text.trim(),
+          categoryId: _selectedCategoryId!,
+          filePathOrUrl: _filePathOrUrlController.text.trim().isEmpty
+              ? null
+              : _filePathOrUrlController.text.trim(),
+          notes: _notesController.text.trim().isEmpty
+              ? null
+              : _notesController.text.trim(),
+          priority: _selectedPriority,
+          updatedDate: now,
+        );
+        await provider.updateDocument(updatedDoc);
+      } else {
+        // Thêm mới tài liệu
+        final newDoc = DocumentModel(
+          id: const Uuid().v4(),
+          title: _titleController.text.trim(),
+          subject: _subjectController.text.trim(),
+          categoryId: _selectedCategoryId!,
+          filePathOrUrl: _filePathOrUrlController.text.trim().isEmpty
+              ? null
+              : _filePathOrUrlController.text.trim(),
+          notes: _notesController.text.trim().isEmpty
+              ? null
+              : _notesController.text.trim(),
+          priority: _selectedPriority,
+          createdDate: now,
+          updatedDate: now,
+        );
+        await provider.addDocument(newDoc);
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              _isEditMode
+                  ? 'Đã cập nhật tài liệu thành công'
+                  : 'Đã thêm tài liệu mới',
+            ),
+            backgroundColor: AppTheme.primaryColor,
+          ),
+        );
+        Navigator.of(context).pop();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Có lỗi xảy ra: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
+    }
+  }
+
+  Future<void> _handleDelete() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.cardBackground,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+          side: const BorderSide(color: AppTheme.borderSubtle),
+        ),
+        title: const Text(
+          'Xác nhận xóa tài liệu',
+          style: TextStyle(color: AppTheme.textPrimary),
+        ),
+        content: Text(
+          'Bạn có chắc chắn muốn xóa "${widget.document?.title}"?',
+          style: const TextStyle(color: AppTheme.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text(
+              'Hủy',
+              style: TextStyle(color: AppTheme.textSecondary),
+            ),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Xóa vĩnh viễn'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true && mounted) {
+      await context.read<DocumentProvider>().deleteDocument(
+        widget.document!.id,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Đã xóa tài liệu'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        Navigator.of(context).pop();
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final categories = context.watch<DocumentProvider>().categories;
+
+    // Tự động gán danh mục đầu tiên nếu chưa chọn
+    if (_selectedCategoryId == null && categories.isNotEmpty) {
+      _selectedCategoryId = categories.first.id;
+    }
+
+    return Scaffold(
+      backgroundColor: AppTheme.scaffoldBackground,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(60),
+        child: Container(
+          decoration: const BoxDecoration(
+            gradient: AppTheme.headerGradient,
+            border: Border(bottom: BorderSide(color: AppTheme.borderSubtle)),
+          ),
+          child: SafeArea(
+            child: AppBar(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              title: Text(
+                _isEditMode ? 'Chỉnh sửa tài liệu' : 'Thêm tài liệu mới',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+              actions: [
+                if (_isEditMode)
+                  IconButton(
+                    icon: const Icon(
+                      Icons.delete_outline_rounded,
+                      color: Colors.red,
+                    ),
+                    tooltip: 'Xóa tài liệu',
+                    onPressed: _isSaving ? null : _handleDelete,
+                  ),
+                Padding(
+                  padding: const EdgeInsets.only(right: 12.0),
+                  child: FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppTheme.primaryColor,
+                      foregroundColor: Colors.white,
+                    ),
+                    onPressed: _isSaving ? null : _handleSave,
+                    icon: _isSaving
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Icon(Icons.check_rounded, size: 18),
+                    label: Text(_isSaving ? 'Đang lưu...' : 'Lưu'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      // Box Model: SafeArea bảo vệ vùng hiển thị
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Khối thông tin cốt lõi
+                Row(
+                  children: [
+                    Container(
+                      width: 4,
+                      height: 16,
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryColor,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Thông tin học tập',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.5,
+                        color: AppTheme.primaryColor,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                // Tiêu đề tài liệu
+                TextFormField(
+                  controller: _titleController,
+                  maxLength: AppConstants.titleMaxLength,
+                  textInputAction: TextInputAction.next,
+                  style: const TextStyle(color: AppTheme.textPrimary),
+                  decoration: const InputDecoration(
+                    labelText: 'Tiêu đề tài liệu *',
+                    hintText: 'Ví dụ: Đề cương Giải tích 1 kì 2026',
+                    prefixIcon: Icon(
+                      Icons.title_rounded,
+                      color: AppTheme.primaryColor,
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Vui lòng nhập tiêu đề tài liệu';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 14),
+
+                // Môn học liên quan (Subject)
+                TextFormField(
+                  controller: _subjectController,
+                  maxLength: AppConstants.subjectMaxLength,
+                  textInputAction: TextInputAction.next,
+                  style: const TextStyle(color: AppTheme.textPrimary),
+                  decoration: const InputDecoration(
+                    labelText: 'Môn học *',
+                    hintText: 'Ví dụ: Toán cao cấp, Kiến trúc máy tính,...',
+                    prefixIcon: Icon(
+                      Icons.school_outlined,
+                      color: AppTheme.primaryColor,
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Vui lòng nhập tên môn học';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 14),
+
+                // Chọn Danh mục tài liệu (Category Dropdown)
+                DropdownButtonFormField<String>(
+                  value: _selectedCategoryId,
+                  dropdownColor: AppTheme.cardBackground,
+                  style: const TextStyle(color: AppTheme.textPrimary),
+                  decoration: const InputDecoration(
+                    labelText: 'Danh mục tài liệu *',
+                    prefixIcon: Icon(
+                      Icons.category_outlined,
+                      color: AppTheme.primaryColor,
+                    ),
+                  ),
+                  items: categories.map((CategoryModel cat) {
+                    return DropdownMenuItem<String>(
+                      value: cat.id,
+                      child: Text(
+                        cat.name,
+                        style: const TextStyle(color: AppTheme.textPrimary),
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (val) {
+                    setState(() {
+                      _selectedCategoryId = val;
+                    });
+                  },
+                  validator: (val) =>
+                      val == null ? 'Vui lòng chọn danh mục' : null,
+                ),
+                const SizedBox(height: 24),
+
+                // Khối thông tin liên kết & ghi chú
+                Row(
+                  children: [
+                    Container(
+                      width: 4,
+                      height: 16,
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryColor,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Đính kèm & Chi tiết',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.5,
+                        color: AppTheme.primaryColor,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                // Vùng chọn tệp trực tiếp từ thiết bị.
+                _buildFilePickerCard(),
+                const SizedBox(height: 14),
+
+                // Đường dẫn tệp nội bộ hoặc liên kết Web (giữ lại để tương thích dữ liệu cũ)
+                TextFormField(
+                  controller: _filePathOrUrlController,
+                  textInputAction: TextInputAction.next,
+                  keyboardType: TextInputType.url,
+                  style: const TextStyle(color: AppTheme.textPrimary),
+                  decoration: const InputDecoration(
+                    labelText: 'Đường dẫn tệp / Liên kết web (tùy chọn)',
+                    hintText:
+                        'https://drive.google.com/... hoặc C:/Documents/...',
+                    prefixIcon: Icon(
+                      Icons.link_rounded,
+                      color: AppTheme.primaryColor,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+
+                // Ghi chú bổ sung (Notes)
+                TextFormField(
+                  controller: _notesController,
+                  maxLength: AppConstants.notesMaxLength,
+                  maxLines: 4,
+                  style: const TextStyle(color: AppTheme.textPrimary),
+                  decoration: const InputDecoration(
+                    labelText: 'Ghi chú tóm tắt (tùy chọn)',
+                    hintText: 'Nhập ghi chú tóm tắt nội dung tài liệu hoặc lưu ý quan trọng...',
+                    prefixIcon: Padding(
+                      padding: EdgeInsets.only(bottom: 50.0),
+                      child: Icon(
+                        Icons.notes_rounded,
+                        color: AppTheme.primaryColor,
+                      ),
+                    ),
+                    alignLabelWithHint: true,
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Nút Lưu tài liệu lớn phong cách Emerald
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppTheme.primaryColor,
+                      foregroundColor: Colors.white,
+                    ),
+                    onPressed: _isSaving ? null : _handleSave,
+                    icon: _isSaving
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Icon(Icons.save_rounded),
+                    label: Text(
+                      _isSaving
+                          ? 'Đang lưu dữ liệu...'
+                          : (_isEditMode
+                                ? 'Cập nhật tài liệu'
+                                : 'Lưu tài liệu mới'),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 30),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Vẽ viền nét đứt mà không cần thêm package giao diện bên ngoài.
+class _DashedBorderPainter extends CustomPainter {
+  final Color color;
+
+  const _DashedBorderPainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2;
+    final path = Path()
+      ..addRRect(
+        RRect.fromRectAndRadius(Offset.zero & size, const Radius.circular(14)),
+      );
+
+    for (final metric in path.computeMetrics()) {
+      var distance = 0.0;
+      while (distance < metric.length) {
+        final end = math.min(distance + 7, metric.length);
+        canvas.drawPath(metric.extractPath(distance, end), paint);
+        distance += 12;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _DashedBorderPainter oldDelegate) {
+    return oldDelegate.color != color;
+  }
+}
+
+========================================
+FILE: lib\presentation\screens\home_screen.dart
+========================================
+// ==============================================================================
+// PRESENTATION LAYER: Home Screen (EduVault - LDC Edition)
+// Thiết kế theo phong cách nhận diện Deep Tech Emerald:
+// - Scaffold Background: Deep Slate Navy (#0F172A)
+// - Card Background: Dark Slate (#1E293B) với BorderRadius.circular(16)
+// - Primary Accent: Emerald Green (#10B981) cho FAB, Active Tabs, Icons
+// - Text Colors: Pure White (#FFFFFF) & Muted Slate (#94A3B8)
+// - Hiệu ứng Gradient: LinearGradient cho AppBar & Header Cards tạo chiều sâu công nghệ
+// ==============================================================================
+
+import 'dart:io';
+
+import 'package:flutter/material.dart';
+import 'package:open_filex/open_filex.dart';
+import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+import '../../core/theme/app_theme.dart';
+import '../../domain/models/category_model.dart';
+import '../../domain/models/document_model.dart';
+import '../providers/document_provider.dart';
+import '../widgets/document_card.dart';
+import '../widgets/search_bar_widget.dart';
+import 'add_edit_document_screen.dart';
+
+class HomeScreen extends StatelessWidget {
+  const HomeScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final provider = context.watch<DocumentProvider>();
+    final categories = provider.categories;
+    final filteredDocs = provider.filteredDocuments;
+    final selectedCategoryId = provider.selectedCategoryId;
+    final isLoading = provider.isLoading;
+
+    return Scaffold(
+      backgroundColor: AppTheme.scaffoldBackground,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(68),
+        child: Container(
+          decoration: const BoxDecoration(
+            gradient: AppTheme.headerGradient,
+            border: Border(
+              bottom: BorderSide(color: AppTheme.borderSubtle, width: 1),
+            ),
+          ),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 8.0,
+              ),
+              child: Row(
+                children: [
+                  // Logo biểu tượng với dải màu Emerald phát sáng
+                  Container(
+                    padding: const EdgeInsets.all(9),
+                    decoration: BoxDecoration(
+                      gradient: AppTheme.emeraldPillGradient,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppTheme.primaryColor.withOpacity(0.35),
+                          blurRadius: 10,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.folder_special_rounded,
+                      color: Colors.white,
+                      size: 22,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+
+                  // Tên ứng dụng nổi bật: EduVault - LDC Edition
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Text(
+                              'EduVault',
+                              style: TextStyle(
+                                fontSize: 19,
+                                fontWeight: FontWeight.w800,
+                                color: AppTheme.textPrimary,
+                                letterSpacing: -0.4,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            // Tag định danh LDC Edition
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 7,
+                                vertical: 2.5,
+                              ),
+                              decoration: BoxDecoration(
+                                gradient: AppTheme.emeraldPillGradient,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: const Text(
+                                'LDC EDITION',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.white,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 2),
+                        const Text(
+                          'Study Document Manager • Deep Tech Emerald',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: AppTheme.textSecondary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Nút thông tin About / LDC Edition
+                  IconButton(
+                    icon: const Icon(
+                      Icons.info_outline_rounded,
+                      color: AppTheme.primaryColor,
+                    ),
+                    tooltip: 'Thông tin EduVault - LDC Edition',
+                    onPressed: () => _showAboutDialog(context),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+      // Box Model: SafeArea bảo vệ toàn vẹn hiển thị
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Header Card hiển thị tóm tắt thống kê với LinearGradient tạo chiều sâu
+            Container(
+              margin: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Color(0xFF1E293B), // Dark Slate
+                    Color(0xFF131D2E),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppTheme.borderSubtle, width: 1),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  // Tổng số tài liệu
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: AppTheme.primaryColor.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(
+                            Icons.auto_stories_rounded,
+                            color: AppTheme.primaryColor,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${provider.documents.length}',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: AppTheme.textPrimary,
+                              ),
+                            ),
+                            const Text(
+                              'Tổng tài liệu',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppTheme.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  Container(height: 30, width: 1, color: AppTheme.borderSubtle),
+
+                  // Số kết quả lọc hiện tại
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 14.0),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF38BDF8).withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(
+                              Icons.filter_alt_outlined,
+                              color: Color(0xFF38BDF8),
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${filteredDocs.length}',
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppTheme.textPrimary,
+                                ),
+                              ),
+                              const Text(
+                                'Hiển thị',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: AppTheme.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Khối tìm kiếm thời gian thực
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
+              child: CustomSearchBar(
+                initialValue: provider.searchQuery,
+                onChanged: (query) {
+                  provider.setSearchQuery(query);
+                },
+                onClear: () {
+                  provider.setSearchQuery('');
+                },
+              ),
+            ),
+
+            // Thanh lọc danh mục nằm ngang (Active Tabs sử dụng Emerald Green #10B981)
+            SizedBox(
+              height: 44,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                children: [
+                  // Tab "Tất cả"
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8.0),
+                    child: _buildCategoryTab(
+                      label: 'Tất cả',
+                      isSelected:
+                          selectedCategoryId == null ||
+                          selectedCategoryId == 'all',
+                      onTap: () => provider.setCategoryFilter('all'),
+                    ),
+                  ),
+
+                  // Các Category Tabs động lấy từ Database
+                  ...categories.map((CategoryModel cat) {
+                    final isSelected = selectedCategoryId == cat.id;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8.0),
+                      child: _buildCategoryTab(
+                        label: cat.name,
+                        isSelected: isSelected,
+                        onTap: () => provider.setCategoryFilter(cat.id),
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 8),
+
+            // Danh sách tài liệu (ListView.builder)
+            Expanded(
+              child: isLoading
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                        color: AppTheme.primaryColor,
+                      ),
+                    )
+                  : filteredDocs.isEmpty
+                  ? _buildEmptyState(context, provider)
+                  : RefreshIndicator(
+                      color: AppTheme.primaryColor,
+                      backgroundColor: AppTheme.cardBackground,
+                      onRefresh: () async {
+                        await provider.refresh();
+                      },
+                      child: ListView.builder(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.fromLTRB(16, 4, 16, 85),
+                        itemCount: filteredDocs.length,
+                        itemBuilder: (context, index) {
+                          final doc = filteredDocs[index];
+                          return DocumentCard(
+                            document: doc,
+                            onTap: () {
+                              _openDocument(context, doc);
+                            },
+                            onEdit: () {
+                              _navigateToEdit(context, doc);
+                            },
+                            onDelete: () {
+                              _confirmDelete(context, doc);
+                            },
+                          );
+                        },
+                      ),
+                    ),
+            ),
+          ],
+        ),
+      ),
+      // Floating Action Button phong cách Emerald Green #10B981
+      floatingActionButton: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: AppTheme.primaryColor.withOpacity(0.4),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: FloatingActionButton.extended(
+          backgroundColor: AppTheme.primaryColor,
+          foregroundColor: Colors.white,
+          onPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (ctx) => const AddEditDocumentScreen(),
+              ),
+            );
+          },
+          icon: const Icon(Icons.add_rounded, size: 22),
+          label: const Text(
+            'Thêm tài liệu',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Widget vẽ Tab lọc danh mục với Emerald Green Accent
+  Widget _buildCategoryTab({
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? AppTheme.primaryColor : AppTheme.cardBackground,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? AppTheme.primaryColor : AppTheme.borderSubtle,
+            width: 1,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: AppTheme.primaryColor.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+              color: isSelected ? Colors.white : AppTheme.textSecondary,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Chuyển sang màn hình chỉnh sửa
+  void _navigateToEdit(BuildContext context, DocumentModel doc) {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (ctx) => AddEditDocumentScreen(document: doc)),
+    );
+  }
+
+  /// Mở tệp nội bộ bằng ứng dụng tương thích hoặc mở liên kết bằng trình duyệt.
+  Future<void> _openDocument(BuildContext context, DocumentModel doc) async {
+    if (!doc.hasAttachment) {
+      _navigateToEdit(context, doc);
+      return;
+    }
+
+    final savedPath = doc.filePathOrUrl!.trim();
+    if (doc.isWebLink) {
+      final launched = await launchUrl(
+        Uri.parse(savedPath),
+        mode: LaunchMode.externalApplication,
+      );
+      if (!launched && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Không thể mở liên kết tài liệu.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
+    final file = File(savedPath);
+    if (!await file.exists()) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Không tìm thấy tệp trong bộ nhớ ứng dụng.'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+      return;
+    }
+
+    final result = await OpenFilex.open(savedPath);
+    if (result.type != ResultType.done && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Không thể mở tệp: ${result.message}'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+    }
+  }
+
+  // Xác nhận xóa tài liệu với Dialog an toàn
+  Future<void> _confirmDelete(BuildContext context, DocumentModel doc) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.cardBackground,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+          side: const BorderSide(color: AppTheme.borderSubtle),
+        ),
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.red),
+            SizedBox(width: 8),
+            Text(
+              'Xác nhận xóa tài liệu',
+              style: TextStyle(color: AppTheme.textPrimary),
+            ),
+          ],
+        ),
+        content: Text(
+          'Bạn có chắc chắn muốn xóa tài liệu "${doc.title}"?\nThao tác này không thể hoàn tác.',
+          style: const TextStyle(color: AppTheme.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text(
+              'Hủy',
+              style: TextStyle(color: AppTheme.textSecondary),
+            ),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Xóa vĩnh viễn'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      await context.read<DocumentProvider>().deleteDocument(doc.id);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Đã xóa "${doc.title}"'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  // Hộp thoại giới thiệu thông tin EduVault - LDC Edition
+  void _showAboutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.cardBackground,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: const BorderSide(color: AppTheme.borderSubtle),
+        ),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                gradient: AppTheme.emeraldPillGradient,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(
+                Icons.verified_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 10),
+            const Text(
+              'EduVault',
+              style: TextStyle(
+                color: AppTheme.textPrimary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                gradient: AppTheme.emeraldPillGradient,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Text(
+                'LDC EDITION • V1.0.0',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Ứng dụng Quản lý Tài liệu Học tập chuẩn kiến trúc Cashew App với giao diện Deep Tech Emerald cao cấp.',
+              style: TextStyle(color: AppTheme.textSecondary, height: 1.4),
+            ),
+            const SizedBox(height: 14),
+            const Divider(color: AppTheme.borderSubtle),
+            const SizedBox(height: 8),
+            const Row(
+              children: [
+                Icon(
+                  Icons.storage_rounded,
+                  size: 16,
+                  color: AppTheme.primaryColor,
+                ),
+                SizedBox(width: 8),
+                Text(
+                  'Drift ORM (SQLite Background Isolate)',
+                  style: TextStyle(color: AppTheme.textPrimary, fontSize: 12),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            const Row(
+              children: [
+                Icon(
+                  Icons.palette_rounded,
+                  size: 16,
+                  color: AppTheme.primaryColor,
+                ),
+                SizedBox(width: 8),
+                Text(
+                  'Deep Tech Emerald Theme Palette',
+                  style: TextStyle(color: AppTheme.textPrimary, fontSize: 12),
+                ),
+              ],
+            ),
+          ],
+        ),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Đóng'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Widget hiển thị khi không có tài liệu nào phù hợp với bộ lọc
+  Widget _buildEmptyState(BuildContext context, DocumentProvider provider) {
+    final hasFilter =
+        provider.searchQuery.isNotEmpty ||
+        (provider.selectedCategoryId != null &&
+            provider.selectedCategoryId != 'all');
+
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 90,
+              height: 90,
+              decoration: BoxDecoration(
+                color: AppTheme.primaryColor.withOpacity(0.12),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: AppTheme.primaryColor.withOpacity(0.25),
+                  width: 1.5,
+                ),
+              ),
+              child: Icon(
+                hasFilter
+                    ? Icons.search_off_rounded
+                    : Icons.folder_open_rounded,
+                size: 46,
+                color: AppTheme.primaryColor,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              hasFilter
+                  ? 'Không tìm thấy tài liệu phù hợp'
+                  : 'Chưa có tài liệu nào',
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.textPrimary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              hasFilter
+                  ? 'Hãy thử thay đổi từ khóa tìm kiếm hoặc chọn danh mục khác.'
+                  : 'Bắt đầu quản lý tài liệu học tập của bạn bằng cách thêm tài liệu đầu tiên.',
+              style: const TextStyle(
+                fontSize: 14,
+                color: AppTheme.textSecondary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            if (hasFilter)
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppTheme.primaryColor,
+                  side: const BorderSide(color: AppTheme.primaryColor),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: () {
+                  provider.setSearchQuery('');
+                  provider.setCategoryFilter('all');
+                },
+                icon: const Icon(Icons.refresh_rounded),
+                label: const Text('Đặt lại bộ lọc'),
+              )
+            else
+              FilledButton.icon(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (ctx) => const AddEditDocumentScreen(),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.add_rounded),
+                label: const Text('Tạo tài liệu mới'),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+========================================
+FILE: lib\presentation\widgets\document_card.dart
+========================================
+// ==============================================================================
+// PRESENTATION LAYER: Document Card Widget (Deep Tech Emerald)
+// Tuân thủ nghiêm ngặt Flutter Box Model: Card, Padding, Margin, Row, Column.
+// Áp dụng nhận diện phong cách Deep Tech Emerald:
+// - Card Background: Dark Slate (#1E293B) với BorderRadius.circular(16)
+// - Primary Accent: Emerald Green (#10B981) cho các Icons, Liên kết & Badges
+// - Text Colors: Pure White (#FFFFFF) cho tiêu đề & Muted Slate (#94A3B8) cho mô tả/ngày tháng
+// ==============================================================================
+
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import '../../core/theme/app_theme.dart';
+import '../../domain/models/document_model.dart';
+
+class DocumentCard extends StatelessWidget {
+  final DocumentModel document;
+  final VoidCallback onTap;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
+  const DocumentCard({
+    super.key,
+    required this.document,
+    required this.onTap,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  // Chuyển đổi mã màu hex sang Color object an toàn
+  Color _parseColor(String? hexString, Color fallback) {
+    if (hexString == null || hexString.isEmpty) return fallback;
+    try {
+      final buffer = StringBuffer();
+      if (hexString.length == 6 || hexString.length == 7) buffer.write('ff');
+      buffer.write(hexString.replaceFirst('#', ''));
+      return Color(int.parse(buffer.toString(), radix: 16));
+    } catch (_) {
+      return fallback;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final categoryColor = _parseColor(document.categoryColorHex, AppTheme.primaryColor);
+    final formattedDate = DateFormat('dd/MM/yyyy HH:mm').format(document.createdDate);
+
+    // Box Model: Card với nền Dark Slate #1E293B và bo góc BorderRadius.circular(16)
+    return Card(
+      elevation: 0,
+      color: AppTheme.cardBackground,
+      margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(
+          color: AppTheme.borderSubtle,
+          width: 1,
+        ),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: Padding(
+          // Box Model: Padding bên trong tạo không gian thở (breathing room)
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Hàng trên: Category Badge & Popup Actions Menu
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // Badge hiển thị danh mục với viền và điểm nhấn màu sắc
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: categoryColor.withOpacity(0.18),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: categoryColor.withOpacity(0.4),
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.folder_outlined,
+                          size: 14,
+                          color: categoryColor,
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          document.categoryName ?? 'Chưa phân loại',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: categoryColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Spacer(),
+                  // Nút menu tùy chọn (Edit / Delete)
+                  PopupMenuButton<String>(
+                    icon: const Icon(
+                      Icons.more_horiz_rounded,
+                      color: AppTheme.textSecondary,
+                    ),
+                    color: AppTheme.cardBackground,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      side: const BorderSide(color: AppTheme.borderSubtle),
+                    ),
+                    onSelected: (value) {
+                      if (value == 'edit') {
+                        onEdit();
+                      } else if (value == 'delete') {
+                        onDelete();
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      const PopupMenuItem(
+                        value: 'edit',
+                        child: Row(
+                          children: [
+                            Icon(Icons.edit_outlined, size: 18, color: AppTheme.primaryColor),
+                            SizedBox(width: 8),
+                            Text('Chỉnh sửa', style: TextStyle(color: AppTheme.textPrimary)),
+                          ],
+                        ),
+                      ),
+                      const PopupMenuItem(
+                        value: 'delete',
+                        child: Row(
+                          children: [
+                            Icon(Icons.delete_outline_rounded, size: 18, color: Colors.red),
+                            SizedBox(width: 8),
+                            Text('Xóa tài liệu', style: TextStyle(color: Colors.red)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 10),
+
+              // Tiêu đề tài liệu: Pure White #FFFFFF
+              Text(
+                document.title,
+                style: const TextStyle(
+                  fontSize: 16.5,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.3,
+                  color: AppTheme.textPrimary, // Pure White #FFFFFF
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+
+              const SizedBox(height: 6),
+
+              // Môn học liên quan: Muted Slate #94A3B8
+              Row(
+                children: [
+                  const Icon(
+                    Icons.school_outlined,
+                    size: 15,
+                    color: AppTheme.primaryColor, // Emerald Green #10B981
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'Môn học: ${document.subject}',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: AppTheme.textSecondary, // Muted Slate #94A3B8
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+
+              // Ghi chú tóm tắt (Notes) nếu có: Muted Slate #94A3B8
+              if (document.notes != null && document.notes!.trim().isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text(
+                  document.notes!.trim(),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppTheme.textSecondary,
+                    height: 1.35,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+
+              const SizedBox(height: 12),
+              const Divider(height: 1, thickness: 0.8, color: AppTheme.borderSubtle),
+              const SizedBox(height: 10),
+
+              // Hàng chân card: Chỉ báo liên kết & Ngày tháng tạo
+              Row(
+                children: [
+                  // Chỉ báo File hoặc Liên kết web với màu Emerald Green #10B981
+                  if (document.hasAttachment) ...[
+                    Icon(
+                      document.isWebLink ? Icons.link_rounded : Icons.attach_file_rounded,
+                      size: 16,
+                      color: AppTheme.primaryColor,
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        document.filePathOrUrl ?? '',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppTheme.primaryColor,
+                          decoration: TextDecoration.underline,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ] else ...[
+                    const Spacer(),
+                  ],
+
+                  // Ngày tháng tạo: Muted Slate #94A3B8
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.access_time_rounded,
+                        size: 13,
+                        color: AppTheme.textSecondary,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        formattedDate,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppTheme.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+========================================
+FILE: lib\presentation\widgets\search_bar_widget.dart
+========================================
+// ==============================================================================
+// PRESENTATION LAYER: Custom Search Bar Widget (Deep Tech Emerald)
+// Tuân thủ Flutter Box Model: Container làm khung với chiều cao, viền và đổ bóng nhẹ.
+// Thiết kế đồng bộ Deep Tech Emerald: Dark Slate #1E293B, Slate 700 #334155,
+// Text trắng #FFFFFF và Icon tìm kiếm Emerald Green #10B981.
+// ==============================================================================
+
+import 'package:flutter/material.dart';
+import '../../core/theme/app_theme.dart';
+
+class CustomSearchBar extends StatefulWidget {
+  final ValueChanged<String> onChanged;
+  final VoidCallback? onClear;
+  final String hintText;
+  final String initialValue;
+
+  const CustomSearchBar({
+    super.key,
+    required this.onChanged,
+    this.onClear,
+    this.hintText = 'Tìm kiếm theo tiêu đề hoặc môn học...',
+    this.initialValue = '',
+  });
+
+  @override
+  State<CustomSearchBar> createState() => _CustomSearchBarState();
+}
+
+class _CustomSearchBarState extends State<CustomSearchBar> {
+  late final TextEditingController _controller;
+  bool _hasText = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialValue);
+    _hasText = widget.initialValue.isNotEmpty;
+    _controller.addListener(_handleTextChanged);
+  }
+
+  void _handleTextChanged() {
+    final hasContent = _controller.text.trim().isNotEmpty;
+    if (_hasText != hasContent) {
+      setState(() {
+        _hasText = hasContent;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.removeListener(_handleTextChanged);
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _clearText() {
+    _controller.clear();
+    widget.onChanged('');
+    widget.onClear?.call();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Tuân thủ Box Model: Container làm khung với chiều cao 52px, viền Dark Slate
+    return Container(
+      height: 50,
+      decoration: BoxDecoration(
+        color: AppTheme.cardBackground,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: AppTheme.borderSubtle,
+          width: 1.2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.18),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Center(
+        child: TextField(
+          controller: _controller,
+          onChanged: widget.onChanged,
+          textInputAction: TextInputAction.search,
+          style: const TextStyle(
+            fontSize: 14.5,
+            color: AppTheme.textPrimary,
+          ),
+          decoration: InputDecoration(
+            isDense: true,
+            hintText: widget.hintText,
+            hintStyle: const TextStyle(
+              fontSize: 13.5,
+              color: AppTheme.textSecondary,
+            ),
+            prefixIcon: const Icon(
+              Icons.search_rounded,
+              size: 21,
+              color: AppTheme.primaryColor, // Emerald Green #10B981
+            ),
+            suffixIcon: _hasText
+                ? IconButton(
+                    icon: const Icon(Icons.cancel_rounded, size: 19),
+                    color: AppTheme.textSecondary,
+                    onPressed: _clearText,
+                    tooltip: 'Xóa tìm kiếm',
+                  )
+                : null,
+            border: InputBorder.none,
+            enabledBorder: InputBorder.none,
+            focusedBorder: InputBorder.none,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+========================================
+FILE: pubspec.yaml
+========================================
+name: eduvault
+description: "A new Flutter project."
+# The following line prevents the package from being accidentally published to
+# pub.dev using `flutter pub publish`. This is preferred for private packages.
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+# The following defines the version and build number for your application.
+# A version number is three numbers separated by dots, like 1.2.43
+# followed by an optional build number separated by a +.
+# Both the version and the builder number may be overridden in flutter
+# build by specifying --build-name and --build-number, respectively.
+# In Android, build-name is used as versionName while build-number used as versionCode.
+# Read more about Android versioning at https://developer.android.com/studio/publish/versioning
+# In iOS, build-name is used as CFBundleShortVersionString while build-number is used as CFBundleVersion.
+# Read more about iOS versioning at
+# https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
+# In Windows, build-name is used as the major, minor, and patch parts
+# of the product and file versions while build-number is used as the build suffix.
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.13.4
+
+# Dependencies specify other packages that your package needs in order to work.
+# To automatically upgrade your package dependencies to the latest versions
+# consider running `flutter pub upgrade --major-versions`. Alternatively,
+# dependencies can be manually updated by changing the version numbers below to
+# the latest version available on pub.dev. To see which dependencies have newer
+# versions available, run `flutter pub outdated`.
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # The following adds the Cupertino Icons font to your application.
+  # Use with the CupertinoIcons class for iOS style icons.
+  cupertino_icons: ^1.0.8
+  drift: ^2.35.1
+  sqlite3_flutter_libs: ^0.6.0+eol
+  path_provider: ^2.1.6
+  path: ^1.9.1
+  provider: ^6.1.5+1
+  intl: ^0.20.3
+  uuid: ^4.6.0
+  file_picker: ^13.1.0
+  open_filex: ^4.7.0
+  url_launcher: ^6.3.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  # The "flutter_lints" package below contains a set of recommended lints to
+  # encourage good coding practices. The lint set provided by the package is
+  # activated in the `analysis_options.yaml` file located at the root of your
+  # package. See that file for information about deactivating specific lint
+  # rules and activating additional ones.
+  flutter_lints: ^6.0.0
+  drift_dev: ^2.35.1
+  build_runner: ^2.16.1
+
+# For information on the generic Dart part of this file, see the
+# following page: https://dart.dev/tools/pub/pubspec
+
+# The following section is specific to Flutter packages.
+flutter:
+
+  # The following line ensures that the Material Icons font is
+  # included with your application, so that you can use the icons in
+  # the material Icons class.
+  uses-material-design: true
+
+  # To add assets to your application, add an assets section, like this:
+  # assets:
+  #   - images/a_dot_burr.jpeg
+  #   - images/a_dot_ham.jpeg
+
+  # An image asset can refer to one or more resolution-specific "variants", see
+  # https://flutter.dev/to/resolution-aware-images
+
+  # For details regarding adding assets from package dependencies, see
+  # https://flutter.dev/to/asset-from-package
+
+  # To add custom fonts to your application, add a fonts section here,
+  # in this "flutter" section. Each entry in this list should have a
+  # "family" key with the font family name, and a "fonts" key with a
+  # list giving the asset and other descriptors for the font. For
+  # example:
+  # fonts:
+  #   - family: Schyler
+  #     fonts:
+  #       - asset: fonts/Schyler-Regular.ttf
+  #       - asset: fonts/Schyler-Italic.ttf
+  #         style: italic
+  #   - family: Trajan Pro
+  #     fonts:
+  #       - asset: fonts/TrajanPro.ttf
+  #       - asset: fonts/TrajanPro_Bold.ttf
+  #         weight: 700
+  #
+  # For details regarding fonts from package dependencies,
+  # see https://flutter.dev/to/font-from-package
+
+========================================
+FILE: README.md
+========================================
+# eduvault
+
+A new Flutter project.
+
+## Getting Started
+
+This project is a starting point for a Flutter application.
+
+A few resources to get you started if this is your first Flutter project:
+
+- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
+- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
+- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+
+For help getting started with Flutter development, view the
+[online documentation](https://docs.flutter.dev/), which offers tutorials,
+samples, guidance on mobile development, and a full API reference.
+
