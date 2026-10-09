@@ -10,6 +10,7 @@
 
 import 'dart:io';
 
+import 'package:android_intent_plus/android_intent.dart';
 import 'package:flutter/material.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:provider/provider.dart';
@@ -445,14 +446,53 @@ class HomeScreen extends StatelessWidget {
 
     final savedPath = doc.filePathOrUrl!.trim();
     if (doc.isWebLink) {
-      final launched = await launchUrl(
-        Uri.parse(savedPath),
-        mode: LaunchMode.externalApplication,
-      );
+      final uri = Uri.tryParse(savedPath);
+      if (uri == null || uri.host.isEmpty) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Liên kết tài liệu không hợp lệ.'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+        return;
+      }
+
+      var launched = false;
+      final isGoogleDriveLink =
+          uri.host == 'drive.google.com' ||
+          uri.host.endsWith('.drive.google.com');
+
+      if (Platform.isAndroid && isGoogleDriveLink) {
+        // Gắn package Chrome để Android không chuyển link sang ứng dụng
+        // Google Drive, nơi có thể phát sinh lỗi thiếu tài khoản Google.
+        final chromeIntent = AndroidIntent(
+          action: 'action_view',
+          data: uri.toString(),
+          package: 'com.android.chrome',
+        );
+        if (await chromeIntent.canResolveActivity() == true) {
+          await chromeIntent.launch();
+          launched = true;
+        }
+      }
+
+      // Nếu không phải link Drive hoặc máy không có Chrome, dùng trình duyệt
+      // tích hợp/hệ thống làm phương án dự phòng.
+      if (!launched) {
+        launched = await launchUrl(uri, mode: LaunchMode.inAppBrowserView);
+      }
+      if (!launched) {
+        launched = await launchUrl(uri, mode: LaunchMode.platformDefault);
+      }
       if (!launched && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Không thể mở liên kết tài liệu.'),
+            content: Text(
+              'Không thể mở liên kết. Nếu là Google Drive, hãy bật '
+              'quyền chia sẻ “Bất kỳ ai có liên kết”.',
+            ),
             backgroundColor: Colors.red,
           ),
         );

@@ -163,6 +163,41 @@ class _AddEditDocumentScreenState extends State<AddEditDocumentScreen> {
     }
   }
 
+  /// Kiểm tra tệp đính kèm hoặc liên kết trước khi cho phép lưu tài liệu.
+  ///
+  /// Người dùng phải cung cấp một trong hai loại:
+  /// - URL HTTP/HTTPS hợp lệ; hoặc
+  /// - Đường dẫn tới tệp local đang tồn tại.
+  String? _validateAttachment(String? value) {
+    final attachment = value?.trim() ?? '';
+    if (attachment.isEmpty) {
+      return 'Vui lòng chọn tệp hoặc nhập liên kết tài liệu';
+    }
+
+    final isWindowsLocalPath = RegExp(r'^[a-zA-Z]:[\\/]').hasMatch(attachment);
+    final uri = Uri.tryParse(attachment);
+    final isHttpLink =
+        uri != null &&
+        (uri.scheme.toLowerCase() == 'http' ||
+            uri.scheme.toLowerCase() == 'https');
+    if (isHttpLink) {
+      if (uri.host.isEmpty) {
+        return 'Liên kết tài liệu không hợp lệ';
+      }
+      return null;
+    }
+
+    if (!isWindowsLocalPath && uri != null && uri.scheme.isNotEmpty) {
+      return 'Chỉ hỗ trợ liên kết HTTP/HTTPS hoặc tệp local';
+    }
+
+    if (!File(attachment).existsSync()) {
+      return 'Tệp local không tồn tại hoặc không thể truy cập';
+    }
+
+    return null;
+  }
+
   /// Chọn tệp từ bộ nhớ thiết bị, sau đó lưu bản sao vào vùng dữ liệu riêng.
   Future<void> _pickDocumentFile() async {
     if (_isPickingFile) return;
@@ -398,6 +433,16 @@ class _AddEditDocumentScreenState extends State<AddEditDocumentScreen> {
 
   Future<void> _handleSave() async {
     if (!_formKey.currentState!.validate()) return;
+    final attachmentError = _validateAttachment(_filePathOrUrlController.text);
+    if (attachmentError != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(attachmentError),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
     if (_selectedCategoryId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -740,10 +785,10 @@ class _AddEditDocumentScreenState extends State<AddEditDocumentScreen> {
                   textInputAction: TextInputAction.next,
                   keyboardType: TextInputType.url,
                   style: const TextStyle(color: AppTheme.textPrimary),
+                  validator: _validateAttachment,
                   decoration: const InputDecoration(
-                    labelText: 'Đường dẫn tệp / Liên kết web (tùy chọn)',
-                    hintText:
-                        'https://drive.google.com/... hoặc C:/Documents/...',
+                    labelText: 'Đường dẫn tệp / Liên kết web *',
+                    hintText: 'Chọn tệp ở trên hoặc nhập https://...',
                     prefixIcon: Icon(
                       Icons.link_rounded,
                       color: AppTheme.primaryColor,
